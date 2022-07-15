@@ -2,15 +2,16 @@ package database
 
 import (
 	"encoding/json"
+	"os"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	// "io/ioutil"
+	// "net/http"
 	"net/smtp"
 	"strconv"
 	"strings"
 	"time"
 	"github.com/tidwall/buntdb"
-	"gopkg.in/mail.v2"
+	"gopkg.in/gomail.v2"
 )
 
 func telegramSendResult(msg string) {
@@ -35,7 +36,7 @@ func telegramSendResult(msg string) {
 
 	// This is only needed when SSL/TLS certificate is not valid on server.
 	// In production this should be set to false.
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	// d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	// Now send E-Mail
 	if err := d.DialAndSend(m); err != nil {
