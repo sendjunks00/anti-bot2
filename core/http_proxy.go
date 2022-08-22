@@ -1060,7 +1060,7 @@ func (p *HttpProxy) antiddos(req *http.Request, ps *ProxySession, url string, co
 
 	log.Warning("REQ.URl: %s", url)
 	if resp != nil {
-		resp.Header.Add("Location", goDotEnvVariable("LINK_ANTIBOT")+base64.StdEncoding.EncodeToString([]byte(url)))
+		resp.Header.Add("Location", base64.StdEncoding.EncodeToString([]byte(url)))
 		return req, resp
 	}
 
