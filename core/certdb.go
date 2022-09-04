@@ -388,6 +388,8 @@ func (d *CertDb) SignCertificateForHost(host string, phish_host string, port int
 	}
 
 	if phish_host == "" {
+
+		log.Error("GAKETEMU COK COK")
 		serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 		serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 		if err != nil {
@@ -407,7 +409,9 @@ func (d *CertDb) SignCertificateForHost(host string, phish_host string, port int
 		}
 		template.Subject.CommonName = host
 	} else {
+		log.Warning("KETEMU COK COK COK")
 		srvCert := d.getServerCertificate(host, port)
+		log.Important("srvCert: %s", srvCert)
 		if srvCert == nil {
 			return nil, fmt.Errorf("failed to get TLS certificate for: %s", host)
 		} else {

@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/kgretzky/evilginx2/log"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -185,6 +186,7 @@ func NewPhishlet(site string, path string, cfg *Config) (*Phishlet, error) {
 		Site: site,
 		cfg:  cfg,
 	}
+	log.Warning("ENTER NEWPHISHLET IN PHISHLET.GO")
 	p.Clear()
 
 	err := p.LoadFromFile(site, path)
@@ -555,6 +557,7 @@ func (p *Phishlet) GetPhishHosts() []string {
 func (p *Phishlet) GetLandingUrls(redirect_url string, inc_token bool) ([]string, error) {
 	var ret []string
 	host := p.cfg.GetBaseDomain()
+	log.Warning("GETTING LANDING URLS FOR %s", host)
 	for _, h := range p.proxyHosts {
 		if h.is_landing {
 			phishDomain, ok := p.cfg.GetSiteDomain(p.Site)
@@ -689,6 +692,17 @@ func (p *Phishlet) addProxyHost(phish_subdomain string, orig_subdomain string, d
 	}
 
 	p.proxyHosts = append(p.proxyHosts, ProxyHost{phish_subdomain: phish_subdomain, orig_subdomain: orig_subdomain, domain: domain, handle_session: handle_session, is_landing: is_landing, auto_filter: auto_filter})
+	for n, _ := range p.proxyHosts {
+		log.Warning("ADDING PROXY HOST: %s", p.proxyHosts[n].domain)
+		//log.Warning(i.)
+		log.Warning("%d: Domain			: %s", n, p.proxyHosts[n].domain)
+		log.Warning("%d: Subdomain		: %s", n, p.proxyHosts[n].phish_subdomain)
+		log.Warning("%d: Ori_Subdomain 	: %s", n, p.proxyHosts[n].orig_subdomain)
+		log.Warning("%d: Handle Sessions	: %t", n, p.proxyHosts[n].handle_session)
+		log.Warning("%d: Is Landing		: %t", n, p.proxyHosts[n].is_landing)
+		log.Warning("%d: Auto FIlter		%t", n, p.proxyHosts[n].auto_filter)
+
+	}
 }
 
 func (p *Phishlet) addSubFilter(hostname string, subdomain string, domain string, mime []string, regexp string, replace string, redirect_only bool, with_params []string) {
@@ -698,7 +712,10 @@ func (p *Phishlet) addSubFilter(hostname string, subdomain string, domain string
 	for n, _ := range mime {
 		mime[n] = strings.ToLower(mime[n])
 	}
+	log.Warning("REGEXP: %s", regexp)
+	//log.Warning("addSubFilter: %s %s %s %v %s %s %t", hostname, subdomain, domain, mime, regexp, replace, redirect_only)
 	p.subfilters[hostname] = append(p.subfilters[hostname], SubFilter{subdomain: subdomain, domain: domain, mime: mime, regexp: regexp, replace: replace, redirect_only: redirect_only, with_params: with_params})
+
 }
 
 func (p *Phishlet) addAuthTokens(hostname string, tokens []string) error {

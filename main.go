@@ -150,6 +150,8 @@ func main() {
 		return
 	}
 
+	log.Debug("config: %v", cfg)
+
 	hp, _ := core.NewHttpProxy("", 443, cfg, crt_db, db, bl, *developer_mode)
 	hp.Start()
 

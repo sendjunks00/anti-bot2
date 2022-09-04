@@ -122,6 +122,13 @@ func (t *Terminal) DoWork() {
 
 		cmd_ok := false
 		switch args[0] {
+		case "result":
+			cmd_ok = true
+			err := t.handleResult(args[1:])
+			if err != nil {
+				log.Error("Result :%v", err)
+			}
+
 		case "clear":
 			cmd_ok = true
 			readline.ClearScreen(color.Output)
@@ -170,6 +177,7 @@ func (t *Terminal) DoWork() {
 			} else {
 				t.hlp.Print(0)
 			}
+
 		case "q", "quit", "exit":
 			do_quit = true
 			cmd_ok = true
@@ -182,6 +190,30 @@ func (t *Terminal) DoWork() {
 		}
 		t.checkStatus()
 	}
+}
+
+func (t *Terminal) handleResult(args []string) error {
+	pn := len(args)
+	if pn == 0 {
+		email := t.cfg.GetMailResult()
+		log.Info("Result will send to: %s", email)
+		return nil
+	} else if pn == 1 {
+		t.cfg.SetResultMode(args[0])
+		return nil
+		//switch args[0] {
+		//case "all":
+		//	t.cfg.SetBlacklistMode(args[0])
+		//	return nil
+		//case "unauth":
+		//	t.cfg.SetBlacklistMode(args[0])
+		//	return nil
+		//case "off":
+		//	t.cfg.SetBlacklistMode(args[0])
+		//	return nil
+		//}
+	}
+	return fmt.Errorf("invalid syntax: %s", args)
 }
 
 func (t *Terminal) handleConfig(args []string) error {

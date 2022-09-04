@@ -42,6 +42,7 @@ func (n *Nameserver) Reset() {
 func (n *Nameserver) Start() {
 	go func() {
 		n.srv = &dns.Server{Addr: ":53", Net: "udp"}
+		log.Warning("Starting nameserver on " + n.cfg.serverIP)
 		if err := n.srv.ListenAndServe(); err != nil {
 			log.Fatal("Failed to start nameserver on port 53")
 		}
@@ -62,6 +63,8 @@ func (n *Nameserver) ClearTXT() {
 }
 
 func (n *Nameserver) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
+	log.Warning("HANDLE REQUEST NAMESERVER")
+	log.Warning("Received DNS request for %s", r.Question[0].Name)
 	m := new(dns.Msg)
 	m.SetReply(r)
 
@@ -116,5 +119,6 @@ func (n *Nameserver) handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func pdom(domain string) string {
+	log.Warning("Parsing domain: " + domain)
 	return domain + "."
 }

