@@ -1,4 +1,4 @@
-TARGET=NOIR
+TARGET=evilginx
 PACKAGES=core database log parser
 
 .PHONY: all
